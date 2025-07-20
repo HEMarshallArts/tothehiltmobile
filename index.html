@@ -1,3 +1,5 @@
+v22
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -190,7 +192,7 @@
 
         .fighting-arena {
             display: flex;
-            flex-direction: row;
+            flex-direction: row !important;
             gap: 10px;
             margin: 20px 0;
             height: 60vh;
@@ -465,6 +467,12 @@
                 padding: 6px 2px;
             }
 
+            .fighting-arena {
+                flex-direction: row !important;
+                height: 55vh;
+                gap: 8px;
+            }
+
             .fighter-name {
                 font-size: 1em;
             }
@@ -489,10 +497,6 @@
             .timer-display {
                 font-size: 2em;
             }
-
-            .fighting-arena {
-                height: 55vh;
-            }
         }
 
         @media (max-width: 360px) {
@@ -513,6 +517,12 @@
                 font-size: 9px;
             }
 
+            .fighting-arena {
+                flex-direction: row !important;
+                height: 50vh;
+                gap: 6px;
+            }
+
             .score {
                 font-size: 2.2em;
                 margin: 6px 0;
@@ -523,15 +533,12 @@
                 font-size: 11px;
                 min-height: 45px;
             }
-
-            .fighting-arena {
-                height: 50vh;
-            }
         }
 
         /* Landscape orientation adjustments */
         @media (orientation: landscape) and (max-height: 500px) {
             .fighting-arena {
+                flex-direction: row !important;
                 height: 70vh;
             }
 
@@ -587,6 +594,9 @@
         <!-- Match List Screen -->
         <div id="matches-screen" class="screen">
             <h2 style="color: #d4af37; text-align: center; margin-bottom: 15px; font-size: 1.3em;">Tournament Matches</h2>
+            <div class="button-row">
+                <button class="btn" onclick="showScreen('input-screen')" style="max-width: 200px;">← Back to Setup</button>
+            </div>
             <table class="matches-table" id="matches-table">
                 <thead>
                     <tr>
@@ -604,6 +614,10 @@
 
         <!-- Fighting Screen -->
         <div id="fighting-screen" class="screen">
+            <div class="button-row">
+                <button class="btn" onclick="showScreen('matches-screen')" style="max-width: 200px;">← Back to Matches</button>
+            </div>
+            
             <div class="match-info" id="match-info">
                 Match 1 of 10
             </div>
@@ -675,6 +689,9 @@
         <!-- Match Results Screen -->
         <div id="results-screen" class="screen">
             <h2 style="color: #d4af37; text-align: center; margin-bottom: 15px; font-size: 1.3em;">Match Results</h2>
+            <div class="button-row">
+                <button class="btn" onclick="showScreen('matches-screen')" style="max-width: 200px;">← Back to Matches</button>
+            </div>
             <table class="results-table" id="results-table">
                 <thead>
                     <tr>
@@ -697,6 +714,9 @@
         <div id="rankings-screen" class="screen">
             <div class="final-results">
                 <h2 style="color: #d4af37; margin-bottom: 20px; font-size: 1.3em;">Final Tournament Rankings</h2>
+                <div class="button-row">
+                    <button class="btn" onclick="showScreen('results-screen')" style="max-width: 200px;">← Back to Results</button>
+                </div>
                 <div id="rankings-list"></div>
                 <div class="button-row">
                     <button class="btn" onclick="exportToCSV()">Export CSV</button>
@@ -957,6 +977,13 @@
             timerSeconds = Math.floor(matchDurationMinutes * 60);
             updateTimerDisplay();
             stopTimer(); // Ensure timer is stopped
+            
+            // Remove any existing end match button when initializing
+            const timerSection = document.getElementById('timer-section');
+            const existingBtn = timerSection.querySelector('.end-match-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
         }
 
         function updateTimerDisplay() {
@@ -971,7 +998,7 @@
             timerDisplay.classList.remove('warning', 'expired');
             if (timerSeconds <= 0) {
                 timerDisplay.classList.add('expired');
-            } else if (timerSeconds <= 30) {
+            } else if (timerSeconds <= 15) {
                 timerDisplay.classList.add('warning');
             }
         }
@@ -1009,16 +1036,45 @@
         function resetTimer() {
             stopTimer();
             initializeTimer();
+            
+            // Also remove end match button when resetting
+            const timerSection = document.getElementById('timer-section');
+            const existingBtn = timerSection.querySelector('.end-match-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
         }
 
         function timeExpired() {
             stopTimer();
             
+            // Show the end match button instead of automatically ending
+            const endMatchBtn = document.createElement('button');
+            endMatchBtn.className = 'btn';
+            endMatchBtn.textContent = 'End Match';
+            endMatchBtn.onclick = () => endTimedMatch();
+            endMatchBtn.style.backgroundColor = '#dc3545';
+            endMatchBtn.style.borderColor = '#dc3545';
+            endMatchBtn.style.marginTop = '10px';
+            
+            const timerSection = document.getElementById('timer-section');
+            
+            // Remove any existing end match button
+            const existingBtn = timerSection.querySelector('.end-match-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            endMatchBtn.classList.add('end-match-btn');
+            timerSection.appendChild(endMatchBtn);
+        }
+
+        function endTimedMatch() {
             const match = matches[currentMatchIndex];
             const redScore = match.redScore;
             const blueScore = match.blueScore;
             
-            // Determine winner by highest score
+            // Determine winner by highest score, or declare draw
             if (redScore !== blueScore) {
                 match.completed = true;
                 match.winner = redScore > blueScore ? match.redFighter : match.blueFighter;
@@ -1029,8 +1085,19 @@
                 document.getElementById('victory-text').textContent = `Time expired! ${winnerName} wins ${finalScore}!`;
                 showScreen('victory-screen');
             } else {
-                // Handle tie - could extend time or declare draw
-                alert('Time expired with a tie! Match continues until someone scores.');
+                // Handle tie - for now, we'll call it a draw and mark as completed
+                match.completed = true;
+                match.winner = 'Draw';
+                
+                document.getElementById('victory-text').textContent = `Time expired! Match ends in a draw ${redScore}-${blueScore}!`;
+                showScreen('victory-screen');
+            }
+            
+            // Remove the end match button after use
+            const timerSection = document.getElementById('timer-section');
+            const existingBtn = timerSection.querySelector('.end-match-btn');
+            if (existingBtn) {
+                existingBtn.remove();
             }
         }
 
@@ -1142,24 +1209,58 @@
             
             // Initialize fighter stats
             fighters.forEach(fighter => {
-                fighterStats[fighter] = { wins: 0, matches: 0 };
+                fighterStats[fighter] = { 
+                    wins: 0, 
+                    matches: 0, 
+                    pointsFor: 0, 
+                    pointsAgainst: 0 
+                };
             });
 
-            // Count wins for each fighter
+            // Count wins and calculate point differences for each fighter
             matches.forEach(match => {
-                if (match.completed) {
+                if (match.completed && match.winner !== 'Draw') {
                     fighterStats[match.redFighter].matches++;
                     fighterStats[match.blueFighter].matches++;
                     
+                    // Add points scored
+                    fighterStats[match.redFighter].pointsFor += match.redScore;
+                    fighterStats[match.redFighter].pointsAgainst += match.blueScore;
+                    fighterStats[match.blueFighter].pointsFor += match.blueScore;
+                    fighterStats[match.blueFighter].pointsAgainst += match.redScore;
+                    
+                    // Count wins
                     if (match.winner) {
                         fighterStats[match.winner].wins++;
                     }
                 }
             });
 
-            // Sort by wins (descending)
+            // Sort by wins first, then by point difference
             const sortedFighters = Object.entries(fighterStats)
-                .sort((a, b) => b[1].wins - a[1].wins);
+                .sort((a, b) => {
+                    const [nameA, statsA] = a;
+                    const [nameB, statsB] = b;
+                    
+                    // Primary sort: by win percentage
+                    const winRateA = statsA.matches > 0 ? statsA.wins / statsA.matches : 0;
+                    const winRateB = statsB.matches > 0 ? statsB.wins / statsB.matches : 0;
+                    
+                    if (winRateA !== winRateB) {
+                        return winRateB - winRateA; // Higher win rate first
+                    }
+                    
+                    // Secondary sort: by point difference (points for - points against)
+                    const pointDiffA = statsA.pointsFor - statsA.pointsAgainst;
+                    const pointDiffB = statsB.pointsFor - statsB.pointsAgainst;
+                    
+                    if (pointDiffA !== pointDiffB) {
+                        return pointDiffB - pointDiffA; // Higher point difference first
+                    }
+                    
+                    // Tertiary sort: by total points scored
+                    return statsB.pointsFor - statsA.pointsFor;
+                });
 
             // Display rankings
             const rankingsList = document.getElementById('rankings-list');
@@ -1174,10 +1275,13 @@
                 else if (index === 1) rankingClass = 'second';
                 else if (index === 2) rankingClass = 'third';
                 
+                const pointDiff = stats.pointsFor - stats.pointsAgainst;
+                const pointDiffText = pointDiff >= 0 ? `+${pointDiff}` : `${pointDiff}`;
+                
                 ranking.className = `ranking ${rankingClass}`;
                 ranking.innerHTML = `
                     <span style="font-size: 1.1em; font-weight: bold;">${index + 1}. ${name}</span>
-                    <span>${stats.wins}/${stats.matches}</span>
+                    <span>${stats.wins}/${stats.matches} (${pointDiffText})</span>
                 `;
                 
                 rankingsList.appendChild(ranking);
