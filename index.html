@@ -179,8 +179,13 @@
         }
 
         .match-row.current {
-            background: rgba(212, 175, 55, 0.2);
+            background: rgba(212, 175, 55, 0.3);
             font-weight: bold;
+            border: 2px solid #d4af37;
+        }
+
+        .match-row.current:hover {
+            background: rgba(212, 175, 55, 0.4);
         }
 
         .fighting-arena {
@@ -221,42 +226,34 @@
             color: #007bff;
         }
 
-        .fighter-image {
-            width: 120px;
-            height: 160px;
-            margin: 0 auto 15px;
-            background: #444;
-            border: 2px solid #8b7355;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #888;
-            font-size: 12px;
-        }
-
         .score {
             font-size: 2.2em;
             font-weight: 700;
-            margin: 15px 0;
+            margin: 20px 0;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
         .score-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
             margin-top: 15px;
         }
 
         .score-btn {
-            padding: 12px 15px;
-            font-size: 13px;
-            border-radius: 20px;
+            padding: 15px 8px;
+            font-size: 11px;
+            border-radius: 8px;
             font-weight: 600;
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
+            text-align: center;
+            line-height: 1.2;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .score-btn.hilt {
@@ -466,11 +463,13 @@
 
             .score {
                 font-size: 1.8em;
+                margin: 15px 0;
             }
 
             .score-btn {
-                padding: 10px 12px;
-                font-size: 12px;
+                padding: 12px 6px;
+                font-size: 10px;
+                min-height: 45px;
             }
 
             .btn {
@@ -501,13 +500,15 @@
                 font-size: 9px;
             }
 
-            .fighter-image {
-                width: 100px;
-                height: 130px;
-            }
-
             .score {
                 font-size: 1.6em;
+                margin: 12px 0;
+            }
+
+            .score-btn {
+                padding: 10px 4px;
+                font-size: 9px;
+                min-height: 40px;
             }
         }
 
@@ -518,11 +519,6 @@
                 gap: 15px;
             }
 
-            .fighter-image {
-                width: 80px;
-                height: 120px;
-            }
-
             .score {
                 font-size: 1.8em;
                 margin: 10px 0;
@@ -530,6 +526,12 @@
 
             .timer-display {
                 font-size: 2em;
+            }
+
+            .score-btn {
+                padding: 8px 4px;
+                font-size: 9px;
+                min-height: 35px;
             }
         }
     </style>
@@ -603,23 +605,21 @@
             <div class="fighting-arena">
                 <div class="fighter red">
                     <div class="fighter-name" id="red-name">Fighter 1</div>
-                    <div class="fighter-image">Red Fighter</div>
                     <div class="score" id="red-score">0</div>
                     <div class="score-buttons">
-                        <button class="score-btn hilt" onclick="addScore('red', 3)">To the hilt +3</button>
-                        <button class="score-btn critical" onclick="addScore('red', 2)">Critical hit +2</button>
-                        <button class="score-btn scratch" onclick="addScore('red', 1)">Tis but a scratch +1</button>
+                        <button class="score-btn hilt" onclick="addScore('red', 3)">To the hilt<br>+3</button>
+                        <button class="score-btn critical" onclick="addScore('red', 2)">Critical hit<br>+2</button>
+                        <button class="score-btn scratch" onclick="addScore('red', 1)">Tis but a scratch<br>+1</button>
                     </div>
                 </div>
 
                 <div class="fighter blue">
                     <div class="fighter-name" id="blue-name">Fighter 2</div>
-                    <div class="fighter-image">Blue Fighter</div>
                     <div class="score" id="blue-score">0</div>
                     <div class="score-buttons">
-                        <button class="score-btn hilt" onclick="addScore('blue', 3)">To the hilt +3</button>
-                        <button class="score-btn critical" onclick="addScore('blue', 2)">Critical hit +2</button>
-                        <button class="score-btn scratch" onclick="addScore('blue', 1)">Tis but a scratch +1</button>
+                        <button class="score-btn hilt" onclick="addScore('blue', 3)">To the hilt<br>+3</button>
+                        <button class="score-btn critical" onclick="addScore('blue', 2)">Critical hit<br>+2</button>
+                        <button class="score-btn scratch" onclick="addScore('blue', 1)">Tis but a scratch<br>+1</button>
                     </div>
                 </div>
             </div>
@@ -824,22 +824,55 @@
             const tbody = document.getElementById('matches-tbody');
             tbody.innerHTML = '';
 
+            // Find the next match that should be fought (first uncompleted match)
+            let nextMatchIndex = -1;
+            for (let i = 0; i < matches.length; i++) {
+                if (!matches[i].completed) {
+                    nextMatchIndex = i;
+                    break;
+                }
+            }
+
             matches.forEach((match, index) => {
                 const row = document.createElement('tr');
-                row.className = `match-row ${match.completed ? 'completed' : ''} ${index === currentMatchIndex ? 'current' : ''}`;
-                row.onclick = () => startMatch(index);
+                
+                // Only allow clicking on the next sequential match
+                const isNextMatch = index === nextMatchIndex;
+                const isCompleted = match.completed;
+                const isCurrent = index === currentMatchIndex;
+                
+                if (isNextMatch && !isCompleted) {
+                    row.className = `match-row current`;
+                    row.onclick = () => startMatch(index);
+                    row.style.cursor = 'pointer';
+                } else if (isCompleted) {
+                    row.className = `match-row completed`;
+                    row.style.cursor = 'default';
+                } else {
+                    row.className = `match-row`;
+                    row.style.cursor = 'not-allowed';
+                    row.style.opacity = '0.6';
+                }
 
                 // Truncate names for mobile display
                 const redName = match.redFighter.length > 8 ? match.redFighter.substring(0, 8) + '...' : match.redFighter;
                 const blueName = match.blueFighter.length > 8 ? match.blueFighter.substring(0, 8) + '...' : match.blueFighter;
-                const status = match.completed ? `${match.winner.substring(0, 6)}${match.winner.length > 6 ? '...' : ''} wins` : 'Pending';
+                
+                let status;
+                if (match.completed) {
+                    status = `${match.winner.substring(0, 6)}${match.winner.length > 6 ? '...' : ''} wins`;
+                } else if (isNextMatch) {
+                    status = 'NEXT';
+                } else {
+                    status = 'Waiting';
+                }
 
                 row.innerHTML = `
                     <td>${match.id}</td>
                     <td title="${match.redFighter}">${redName}</td>
                     <td title="${match.blueFighter}">${blueName}</td>
                     <td>P${match.pool}${roundsPerFighter > 1 ? `R${match.round}` : ''}</td>
-                    <td title="${match.completed ? `${match.winner} wins ${match.redScore}-${match.blueScore}` : 'Pending'}">${status}</td>
+                    <td title="${match.completed ? `${match.winner} wins ${match.redScore}-${match.blueScore}` : status}">${status}</td>
                 `;
 
                 tbody.appendChild(row);
@@ -847,6 +880,21 @@
         }
 
         function startMatch(matchIndex) {
+            // Only allow starting the next sequential match
+            let nextMatchIndex = -1;
+            for (let i = 0; i < matches.length; i++) {
+                if (!matches[i].completed) {
+                    nextMatchIndex = i;
+                    break;
+                }
+            }
+            
+            // Prevent starting any match that isn't the next in sequence
+            if (matchIndex !== nextMatchIndex) {
+                alert('Matches must be completed in sequential order. Please complete the highlighted match next.');
+                return;
+            }
+            
             if (matches[matchIndex].completed) return;
             
             currentMatchIndex = matchIndex;
