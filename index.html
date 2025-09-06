@@ -586,6 +586,7 @@
                 </div>
                 
                 <button class="btn" onclick="generateTournament()">Generate Tournament</button>
+                <button class="btn" onclick="quickStart()" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border-color: #28a745;">Quick Start (3 Min Match)</button>
             </div>
         </div>
 
@@ -680,7 +681,13 @@
             <div class="victory-screen">
                 <h2>Victory!</h2>
                 <div class="final-score" id="victory-text">Red Fighter wins 10-5!</div>
-                <button class="btn" onclick="nextMatch()">Next Match</button>
+                <div id="tournament-next-controls">
+                    <button class="btn" onclick="nextMatch()">Next Match</button>
+                </div>
+                <div id="quickstart-next-controls" style="display: none;">
+                    <button class="btn" onclick="anotherQuickMatch()">Another Match?</button>
+                    <button class="btn" onclick="goHome()">Home Screen</button>
+                </div>
             </div>
         </div>
 
@@ -735,6 +742,7 @@
         let timerSeconds = 0;
         let timerInterval = null;
         let timerRunning = false;
+        let isQuickStartMode = false;
 
         function generateTournament() {
             const input = document.getElementById('fighter-input').value.trim();
@@ -755,8 +763,44 @@
             matchDurationMinutes = parseFloat(document.getElementById('match-duration').value) || 0;
 
             matches = generateMatches(fighters);
+            isQuickStartMode = false;
             displayMatches();
             showScreen('matches-screen');
+        }
+
+        function quickStart() {
+            // Set up a quick 3-minute match between Red and Blue
+            isQuickStartMode = true;
+            matchDurationMinutes = 3;
+            
+            // Create a single quick match
+            const quickMatch = {
+                redFighter: 'Red',
+                blueFighter: 'Blue',
+                completed: false,
+                redScore: 0,
+                blueScore: 0,
+                winner: null,
+                id: 1
+            };
+            
+            matches = [quickMatch];
+            currentMatchIndex = 0;
+            
+            // Set up the fighting screen
+            document.getElementById('red-name').textContent = 'Red';
+            document.getElementById('blue-name').textContent = 'Blue';
+            document.getElementById('red-score').textContent = '0';
+            document.getElementById('blue-score').textContent = '0';
+            document.getElementById('match-info').textContent = 'Quick Match';
+            
+            // Setup timer
+            const timerSection = document.getElementById('timer-section');
+            timerSection.style.display = 'block';
+            initializeTimer();
+            
+            scoreHistory = [];
+            showScreen('fighting-screen');
         }
 
         function generateMatches(fighterList) {
@@ -1081,15 +1125,24 @@
                 const finalScore = `${redScore}-${blueScore}`;
                 
                 document.getElementById('victory-text').textContent = `Time expired! ${winnerName} wins ${finalScore}!`;
-                showScreen('victory-screen');
             } else {
                 // Handle tie - for now, we'll call it a draw and mark as completed
                 match.completed = true;
                 match.winner = 'Draw';
                 
                 document.getElementById('victory-text').textContent = `Time expired! Match ends in a draw ${redScore}-${blueScore}!`;
-                showScreen('victory-screen');
             }
+            
+            // Show appropriate controls based on mode
+            if (isQuickStartMode) {
+                document.getElementById('tournament-next-controls').style.display = 'none';
+                document.getElementById('quickstart-next-controls').style.display = 'block';
+            } else {
+                document.getElementById('tournament-next-controls').style.display = 'block';
+                document.getElementById('quickstart-next-controls').style.display = 'none';
+            }
+            
+            showScreen('victory-screen');
             
             // Remove the end match button after use
             const timerSection = document.getElementById('timer-section');
@@ -1133,14 +1186,30 @@
             if ((redScore >= 10 && redScore - blueScore >= 3) || 
                 (blueScore >= 10 && blueScore - redScore >= 3)) {
                 
-                match.completed = true;
-                match.winner = redScore > blueScore ? match.redFighter : match.blueFighter;
+                // Show alert asking if they want to end the fight
+                const endFight = confirm("Point cap reached! End fight?");
                 
-                const winnerName = match.winner;
-                const finalScore = `${redScore}-${blueScore}`;
-                
-                document.getElementById('victory-text').textContent = `${winnerName} wins ${finalScore}!`;
-                showScreen('victory-screen');
+                if (endFight) {
+                    match.completed = true;
+                    match.winner = redScore > blueScore ? match.redFighter : match.blueFighter;
+                    
+                    const winnerName = match.winner;
+                    const finalScore = `${redScore}-${blueScore}`;
+                    
+                    document.getElementById('victory-text').textContent = `${winnerName} wins ${finalScore}!`;
+                    
+                    // Show appropriate controls based on mode
+                    if (isQuickStartMode) {
+                        document.getElementById('tournament-next-controls').style.display = 'none';
+                        document.getElementById('quickstart-next-controls').style.display = 'block';
+                    } else {
+                        document.getElementById('tournament-next-controls').style.display = 'block';
+                        document.getElementById('quickstart-next-controls').style.display = 'none';
+                    }
+                    
+                    showScreen('victory-screen');
+                }
+                // If they choose not to end the fight, continue playing
             }
         }
 
@@ -1157,6 +1226,12 @@
         }
 
         function nextMatch() {
+            if (isQuickStartMode) {
+                // For quick start, just go back to home
+                goHome();
+                return;
+            }
+            
             // Find next uncompleted match
             let nextIndex = -1;
             for (let i = 0; i < matches.length; i++) {
@@ -1173,6 +1248,16 @@
                 // All matches complete
                 showMatchResults();
             }
+        }
+
+        function anotherQuickMatch() {
+            quickStart();
+        }
+
+        function goHome() {
+            isQuickStartMode = false;
+            stopTimer();
+            showScreen('input-screen');
         }
 
         function showMatchResults() {
@@ -1359,6 +1444,7 @@
             matchResults = [];
             roundsPerFighter = 1;
             matchDurationMinutes = 0;
+            isQuickStartMode = false;
             stopTimer(); // Stop any running timer
             
             document.getElementById('fighter-input').value = '';
