@@ -438,6 +438,99 @@
             margin: 5px;
         }
 
+        /* Point Cap Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .point-cap-modal {
+            background: linear-gradient(135deg, #2c1810 0%, #4a3728 100%);
+            border: 3px solid #d4af37;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+            position: relative;
+        }
+
+        .modal-title {
+            font-family: 'Cinzel Decorative', serif;
+            color: #d4af37;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .modal-message {
+            color: #f4e4c1;
+            font-size: 1.2em;
+            margin-bottom: 25px;
+            font-family: 'Cinzel', serif;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, #8b7355 0%, #6b5a47 100%);
+            color: #f4e4c1;
+            border: 2px solid #d4af37;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            min-width: 140px;
+        }
+
+        .modal-btn:hover {
+            background: linear-gradient(135deg, #a08660 0%, #8b7355 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .modal-btn.end-fight {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border-color: #dc3545;
+        }
+
+        .modal-btn.end-fight:hover {
+            background: linear-gradient(135deg, #e35261 0%, #dc3545 100%);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .modal-btn.continue-fight {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            border-color: #28a745;
+        }
+
+        .modal-btn.continue-fight:hover {
+            background: linear-gradient(135deg, #34ce57 0%, #28a745 100%);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
         /* Responsive adjustments */
         @media (max-width: 480px) {
             .container {
@@ -494,6 +587,28 @@
 
             .timer-display {
                 font-size: 2em;
+            }
+
+            .point-cap-modal {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .modal-title {
+                font-size: 1.4em;
+            }
+
+            .modal-message {
+                font-size: 1em;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+
+            .modal-btn {
+                width: 100%;
+                margin: 5px 0;
             }
         }
 
@@ -614,7 +729,7 @@
         <!-- Fighting Screen -->
         <div id="fighting-screen" class="screen">
             <div class="button-row">
-                <button class="btn" onclick="showScreen('matches-screen')" style="max-width: 200px;">← Back to Matches</button>
+                <button class="btn" onclick="goBackToMatches()" style="max-width: 200px;">← Back to Matches</button>
             </div>
             
             <div class="match-info" id="match-info">
@@ -731,6 +846,18 @@
         </div>
     </div>
 
+    <!-- Point Cap Modal -->
+    <div id="point-cap-modal" class="modal-overlay" onclick="closeModalOnOutsideClick(event)">
+        <div class="point-cap-modal" onclick="event.stopPropagation()">
+            <h2 class="modal-title">Point Cap Reached!</h2>
+            <p class="modal-message">The scoring threshold has been met. End the fight or continue?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn end-fight" onclick="endFightFromModal()">End Fight</button>
+                <button class="modal-btn continue-fight" onclick="continueFightFromModal()">Continue Fighting</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let fighters = [];
         let matches = [];
@@ -788,16 +915,24 @@
             currentMatchIndex = 0;
             
             // Set up the fighting screen
-            document.getElementById('red-name').textContent = 'Red';
-            document.getElementById('blue-name').textContent = 'Blue';
-            document.getElementById('red-score').textContent = '0';
-            document.getElementById('blue-score').textContent = '0';
-            document.getElementById('match-info').textContent = 'Quick Match';
+            const redName = document.getElementById('red-name');
+            const blueName = document.getElementById('blue-name');
+            const redScore = document.getElementById('red-score');
+            const blueScore = document.getElementById('blue-score');
+            const matchInfo = document.getElementById('match-info');
+            
+            if (redName) redName.textContent = 'Red';
+            if (blueName) blueName.textContent = 'Blue';
+            if (redScore) redScore.textContent = '0';
+            if (blueScore) blueScore.textContent = '0';
+            if (matchInfo) matchInfo.textContent = 'Quick Match';
             
             // Setup timer
             const timerSection = document.getElementById('timer-section');
-            timerSection.style.display = 'block';
-            initializeTimer();
+            if (timerSection) {
+                timerSection.style.display = 'block';
+                initializeTimer();
+            }
             
             scoreHistory = [];
             showScreen('fighting-screen');
@@ -918,6 +1053,8 @@
 
         function displayMatches() {
             const tbody = document.getElementById('matches-tbody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
 
             // Find the next match that should be fought (first uncompleted match)
@@ -996,18 +1133,24 @@
             currentMatchIndex = matchIndex;
             const match = matches[currentMatchIndex];
             
-            document.getElementById('red-name').textContent = match.redFighter;
-            document.getElementById('blue-name').textContent = match.blueFighter;
-            document.getElementById('red-score').textContent = match.redScore;
-            document.getElementById('blue-score').textContent = match.blueScore;
-            document.getElementById('match-info').textContent = `Match ${match.id} of ${matches.length}${roundsPerFighter > 1 ? ` (Round ${match.round})` : ''}`;
+            const redName = document.getElementById('red-name');
+            const blueName = document.getElementById('blue-name');
+            const redScore = document.getElementById('red-score');
+            const blueScore = document.getElementById('blue-score');
+            const matchInfo = document.getElementById('match-info');
+            
+            if (redName) redName.textContent = match.redFighter;
+            if (blueName) blueName.textContent = match.blueFighter;
+            if (redScore) redScore.textContent = match.redScore;
+            if (blueScore) blueScore.textContent = match.blueScore;
+            if (matchInfo) matchInfo.textContent = `Match ${match.id} of ${matches.length}${roundsPerFighter > 1 ? ` (Round ${match.round})` : ''}`;
             
             // Setup timer if duration is specified
             const timerSection = document.getElementById('timer-section');
-            if (matchDurationMinutes > 0) {
+            if (matchDurationMinutes > 0 && timerSection) {
                 timerSection.style.display = 'block';
                 initializeTimer();
-            } else {
+            } else if (timerSection) {
                 timerSection.style.display = 'none';
             }
             
@@ -1022,9 +1165,11 @@
             
             // Remove any existing end match button when initializing
             const timerSection = document.getElementById('timer-section');
-            const existingBtn = timerSection.querySelector('.end-match-btn');
-            if (existingBtn) {
-                existingBtn.remove();
+            if (timerSection) {
+                const existingBtn = timerSection.querySelector('.end-match-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
             }
         }
 
@@ -1034,6 +1179,11 @@
             const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
             
             const timerDisplay = document.getElementById('timer-display');
+            if (!timerDisplay) {
+                console.error('Timer display element not found');
+                return;
+            }
+            
             timerDisplay.textContent = display;
             
             // Change color based on remaining time
@@ -1049,8 +1199,11 @@
             if (timerRunning) return;
             
             timerRunning = true;
-            document.getElementById('start-btn').disabled = true;
-            document.getElementById('stop-btn').disabled = false;
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
             
             timerInterval = setInterval(() => {
                 timerSeconds--;
@@ -1066,8 +1219,11 @@
             if (!timerRunning) return;
             
             timerRunning = false;
-            document.getElementById('start-btn').disabled = false;
-            document.getElementById('stop-btn').disabled = true;
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
             
             if (timerInterval) {
                 clearInterval(timerInterval);
@@ -1081,9 +1237,11 @@
             
             // Also remove end match button when resetting
             const timerSection = document.getElementById('timer-section');
-            const existingBtn = timerSection.querySelector('.end-match-btn');
-            if (existingBtn) {
-                existingBtn.remove();
+            if (timerSection) {
+                const existingBtn = timerSection.querySelector('.end-match-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
             }
         }
 
@@ -1100,15 +1258,16 @@
             endMatchBtn.style.marginTop = '10px';
             
             const timerSection = document.getElementById('timer-section');
-            
-            // Remove any existing end match button
-            const existingBtn = timerSection.querySelector('.end-match-btn');
-            if (existingBtn) {
-                existingBtn.remove();
+            if (timerSection) {
+                // Remove any existing end match button
+                const existingBtn = timerSection.querySelector('.end-match-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
+                
+                endMatchBtn.classList.add('end-match-btn');
+                timerSection.appendChild(endMatchBtn);
             }
-            
-            endMatchBtn.classList.add('end-match-btn');
-            timerSection.appendChild(endMatchBtn);
         }
 
         function endTimedMatch() {
@@ -1124,31 +1283,38 @@
                 const winnerName = match.winner;
                 const finalScore = `${redScore}-${blueScore}`;
                 
-                document.getElementById('victory-text').textContent = `Time expired! ${winnerName} wins ${finalScore}!`;
+                const victoryText = document.getElementById('victory-text');
+                if (victoryText) victoryText.textContent = `Time expired! ${winnerName} wins ${finalScore}!`;
             } else {
                 // Handle tie - for now, we'll call it a draw and mark as completed
                 match.completed = true;
                 match.winner = 'Draw';
                 
-                document.getElementById('victory-text').textContent = `Time expired! Match ends in a draw ${redScore}-${blueScore}!`;
+                const victoryText = document.getElementById('victory-text');
+                if (victoryText) victoryText.textContent = `Time expired! Match ends in a draw ${redScore}-${blueScore}!`;
             }
             
             // Show appropriate controls based on mode
+            const tournamentControls = document.getElementById('tournament-next-controls');
+            const quickstartControls = document.getElementById('quickstart-next-controls');
+            
             if (isQuickStartMode) {
-                document.getElementById('tournament-next-controls').style.display = 'none';
-                document.getElementById('quickstart-next-controls').style.display = 'block';
+                if (tournamentControls) tournamentControls.style.display = 'none';
+                if (quickstartControls) quickstartControls.style.display = 'block';
             } else {
-                document.getElementById('tournament-next-controls').style.display = 'block';
-                document.getElementById('quickstart-next-controls').style.display = 'none';
+                if (tournamentControls) tournamentControls.style.display = 'block';
+                if (quickstartControls) quickstartControls.style.display = 'none';
             }
             
             showScreen('victory-screen');
             
             // Remove the end match button after use
             const timerSection = document.getElementById('timer-section');
-            const existingBtn = timerSection.querySelector('.end-match-btn');
-            if (existingBtn) {
-                existingBtn.remove();
+            if (timerSection) {
+                const existingBtn = timerSection.querySelector('.end-match-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
             }
         }
 
@@ -1174,8 +1340,11 @@
 
         function updateScoreDisplay() {
             const match = matches[currentMatchIndex];
-            document.getElementById('red-score').textContent = match.redScore;
-            document.getElementById('blue-score').textContent = match.blueScore;
+            const redScore = document.getElementById('red-score');
+            const blueScore = document.getElementById('blue-score');
+            
+            if (redScore) redScore.textContent = match.redScore;
+            if (blueScore) blueScore.textContent = match.blueScore;
         }
 
         function checkForWin() {
@@ -1183,33 +1352,78 @@
             const redScore = match.redScore;
             const blueScore = match.blueScore;
 
+            // Check if point cap conditions are met
             if ((redScore >= 10 && redScore - blueScore >= 3) || 
                 (blueScore >= 10 && blueScore - redScore >= 3)) {
                 
-                // Show alert asking if they want to end the fight
+                // Show custom modal instead of browser alert
+                showPointCapModal();
+            }
+        }
+
+        function showPointCapModal() {
+            const modal = document.getElementById('point-cap-modal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex'; // Ensure it's visible
+            } else {
+                console.error('Point cap modal element not found');
+                // Fallback to browser alert if modal doesn't exist
                 const endFight = confirm("Point cap reached! End fight?");
-                
                 if (endFight) {
-                    match.completed = true;
-                    match.winner = redScore > blueScore ? match.redFighter : match.blueFighter;
-                    
-                    const winnerName = match.winner;
-                    const finalScore = `${redScore}-${blueScore}`;
-                    
-                    document.getElementById('victory-text').textContent = `${winnerName} wins ${finalScore}!`;
-                    
-                    // Show appropriate controls based on mode
-                    if (isQuickStartMode) {
-                        document.getElementById('tournament-next-controls').style.display = 'none';
-                        document.getElementById('quickstart-next-controls').style.display = 'block';
-                    } else {
-                        document.getElementById('tournament-next-controls').style.display = 'block';
-                        document.getElementById('quickstart-next-controls').style.display = 'none';
-                    }
-                    
-                    showScreen('victory-screen');
+                    endFightFromModal();
                 }
-                // If they choose not to end the fight, continue playing
+            }
+        }
+
+        function hidePointCapModal() {
+            const modal = document.getElementById('point-cap-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        }
+
+        function endFightFromModal() {
+            hidePointCapModal();
+            
+            const match = matches[currentMatchIndex];
+            const redScore = match.redScore;
+            const blueScore = match.blueScore;
+            
+            match.completed = true;
+            match.winner = redScore > blueScore ? match.redFighter : match.blueFighter;
+            
+            const winnerName = match.winner;
+            const finalScore = `${redScore}-${blueScore}`;
+            
+            const victoryText = document.getElementById('victory-text');
+            if (victoryText) victoryText.textContent = `${winnerName} wins ${finalScore}!`;
+            
+            // Show appropriate controls based on mode
+            const tournamentControls = document.getElementById('tournament-next-controls');
+            const quickstartControls = document.getElementById('quickstart-next-controls');
+            
+            if (isQuickStartMode) {
+                if (tournamentControls) tournamentControls.style.display = 'none';
+                if (quickstartControls) quickstartControls.style.display = 'block';
+            } else {
+                if (tournamentControls) tournamentControls.style.display = 'block';
+                if (quickstartControls) quickstartControls.style.display = 'none';
+            }
+            
+            showScreen('victory-screen');
+        }
+
+        function continueFightFromModal() {
+            hidePointCapModal();
+            // Simply close the modal and continue the fight
+        }
+
+        function closeModalOnOutsideClick(event) {
+            // Only close if clicking on the overlay, not the modal content
+            if (event.target.id === 'point-cap-modal') {
+                continueFightFromModal();
             }
         }
 
@@ -1260,8 +1474,18 @@
             showScreen('input-screen');
         }
 
+        function goBackToMatches() {
+            if (isQuickStartMode) {
+                goHome();
+            } else {
+                showScreen('matches-screen');
+            }
+        }
+
         function showMatchResults() {
             const tbody = document.getElementById('results-tbody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
 
             matches.forEach(match => {
@@ -1347,6 +1571,8 @@
 
             // Display rankings
             const rankingsList = document.getElementById('rankings-list');
+            if (!rankingsList) return;
+            
             rankingsList.innerHTML = '';
 
             sortedFighters.forEach((entry, index) => {
@@ -1447,10 +1673,16 @@
             isQuickStartMode = false;
             stopTimer(); // Stop any running timer
             
-            document.getElementById('fighter-input').value = '';
-            document.getElementById('pool-size').value = '5';
-            document.getElementById('rounds-per-fighter').value = '1';
-            document.getElementById('match-duration').value = '0';
+            const fighterInput = document.getElementById('fighter-input');
+            const poolSize = document.getElementById('pool-size');
+            const roundsPerFighterInput = document.getElementById('rounds-per-fighter');
+            const matchDuration = document.getElementById('match-duration');
+            
+            if (fighterInput) fighterInput.value = '';
+            if (poolSize) poolSize.value = '5';
+            if (roundsPerFighterInput) roundsPerFighterInput.value = '1';
+            if (matchDuration) matchDuration.value = '0';
+            
             showScreen('input-screen');
         }
 
@@ -1458,7 +1690,10 @@
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
-            document.getElementById(screenId).classList.add('active');
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+            }
         }
     </script>
 </body>
